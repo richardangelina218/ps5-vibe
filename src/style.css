@@ -419,3 +419,82 @@ input[type="text"] {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* Screen Pop-up Toast Banners (Host Screen) */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(92vw, 450px);
+  pointer-events: none;
+}
+
+.toast-msg {
+  background: rgba(16, 22, 36, 0.95);
+  border: 2px solid var(--accent-2);
+  border-radius: 16px;
+  padding: 16px 20px;
+  color: var(--text);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 20px rgba(122, 240, 200, 0.25);
+  backdrop-filter: blur(16px);
+  animation: toastSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toast-sender {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-2);
+}
+
+.toast-text {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Quick message pills on Admin panel */
+.quick-msg-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quick-msg-chip {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quick-msg-chip:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}

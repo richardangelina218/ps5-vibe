@@ -20,6 +20,7 @@ export type WireMsg =
       authenticated?: boolean;
       sessionId?: string;
     }
+  | { type: "flash_message"; text: string; sender?: string; duration?: number }
   | { type: "log"; text: string }
   | { type: "ping"; ts?: number }
   | { type: "pong"; ts?: number };

@@ -1,7 +1,11 @@
+export type ControllerType = "dualsense" | "dualshock4" | "xbox" | "generic";
+
 export type PadSnapshot = {
   connected: boolean;
   index: number | null;
   id: string;
+  controllerType: ControllerType;
+  modelLabel: string;
   mapping: string;
   buttons: number;
   axes: number;
@@ -10,11 +14,11 @@ export type PadSnapshot = {
   hapticType: string;
 };
 
-const BUTTON_NAMES = [
-  "Cross",
-  "Circle",
-  "Square",
-  "Triangle",
+const PS_BUTTON_NAMES = [
+  "Cross (×)",
+  "Circle (○)",
+  "Square (□)",
+  "Triangle (△)",
   "L1",
   "R1",
   "L2",
@@ -23,20 +27,68 @@ const BUTTON_NAMES = [
   "Options",
   "L3",
   "R3",
-  "Up",
-  "Down",
-  "Left",
-  "Right",
+  "D-Up",
+  "D-Down",
+  "D-Left",
+  "D-Right",
   "PS",
-  "Touch",
+  "Touchpad",
   "Mute",
 ];
+
+const XBOX_BUTTON_NAMES = [
+  "A",
+  "B",
+  "X",
+  "Y",
+  "LB",
+  "RB",
+  "LT",
+  "RT",
+  "View",
+  "Menu",
+  "LS",
+  "RS",
+  "D-Up",
+  "D-Down",
+  "D-Left",
+  "D-Right",
+  "Xbox",
+  "Share",
+];
+
+export function detectController(id: string): { type: ControllerType; label: string } {
+  const lower = id.toLowerCase();
+  if (lower.includes("054c") || lower.includes("dualsense") || lower.includes("wireless controller") && (lower.includes("ps5") || lower.includes("0ce6"))) {
+    return { type: "dualsense", label: "PlayStation 5 DualSense" };
+  }
+  if (lower.includes("dualshock") || lower.includes("05c4") || lower.includes("09cc")) {
+    return { type: "dualshock4", label: "PlayStation 4 DualShock 4" };
+  }
+  if (
+    lower.includes("xbox") ||
+    lower.includes("045e") ||
+    lower.includes("x-box") ||
+    lower.includes("microsoft") ||
+    lower.includes("series x") ||
+    lower.includes("series s") ||
+    lower.includes("wireless controller")
+  ) {
+    if (lower.includes("series") || lower.includes("0b12") || lower.includes("0b13")) {
+      return { type: "xbox", label: "Xbox Series X|S Wireless Controller" };
+    }
+    return { type: "xbox", label: "Xbox Wireless Controller" };
+  }
+  return { type: "generic", label: id || "Standard Gamepad" };
+}
 
 export function emptyPad(): PadSnapshot {
   return {
     connected: false,
     index: null,
     id: "none",
+    controllerType: "generic",
+    modelLabel: "No Controller Detected",
     mapping: "—",
     buttons: 0,
     axes: 0,
@@ -51,25 +103,31 @@ export function readPad(): PadSnapshot {
   const pad = [...pads].find((p) => p && p.connected);
   if (!pad) return emptyPad();
 
+  const info = detectController(pad.id);
+  const buttonMap = info.type === "xbox" ? XBOX_BUTTON_NAMES : PS_BUTTON_NAMES;
+
   const pressed: string[] = [];
   pad.buttons.forEach((b, i) => {
-    if (b.pressed) pressed.push(BUTTON_NAMES[i] ?? `#${i}`);
+    if (b.pressed) pressed.push(buttonMap[i] ?? `#${i}`);
   });
 
   const actuator = pad.vibrationActuator as
     | (GamepadHapticActuator & { type?: string })
     | null
     | undefined;
+
   return {
     connected: true,
     index: pad.index,
-    id: pad.id || "DualSense",
-    mapping: pad.mapping || "unmapped",
+    id: pad.id || "Connected Gamepad",
+    controllerType: info.type,
+    modelLabel: info.label,
+    mapping: pad.mapping || "standard",
     buttons: pad.buttons.length,
     axes: pad.axes.length,
     pressed,
     hasVibration: Boolean(actuator),
-    hapticType: actuator?.type ?? (actuator ? "unknown" : "none"),
+    hapticType: actuator?.type ?? (actuator ? "dual-rumble" : "none"),
   };
 }
 

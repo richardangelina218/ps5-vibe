@@ -80,6 +80,7 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
       <button class="tab-btn active" data-tab="touch">2D Touch Pad</button>
       <button class="tab-btn" data-tab="manual">Precision Sliders</button>
       <button class="tab-btn" data-tab="patterns">Dynamic Patterns</button>
+      <button class="tab-btn" data-tab="message">💬 Send Popup</button>
       <button class="tab-btn" data-tab="sequencer">Custom Sequencer</button>
     </div>
 
@@ -154,7 +155,29 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
       </div>
     </section>
 
-    <!-- TAB 4: Custom Sequencer -->
+    <!-- TAB 4: Pop-up Messages to Host Screen -->
+    <section class="panel tab-content" id="tab-message" style="display:none">
+      <h2>Send Pop-up Banner to Screen</h2>
+      <p class="hint">Type a message below. It will immediately pop up on the other person's phone screen with an alert banner.</p>
+      <div class="stack" style="margin-top:12px">
+        <label class="field">Message Content
+          <input id="msg-input" type="text" placeholder="e.g. Ready for round two?" maxlength="120" style="text-transform:none;letter-spacing:normal" />
+        </label>
+        <div style="display:flex;gap:8px">
+          <button id="send-msg-btn" style="flex:1" disabled>Send Pop-up Alert</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Quick Presets:</div>
+        <div class="quick-msg-row">
+          <span class="quick-msg-chip" data-quick="Ready? Starting in 3, 2, 1...">Ready? 3, 2, 1...</span>
+          <span class="quick-msg-chip" data-quick="Hold tight! ⚡">Hold tight! ⚡</span>
+          <span class="quick-msg-chip" data-quick="How does that vibration level feel?">How does it feel?</span>
+          <span class="quick-msg-chip" data-quick="Turning up intensity! 🔥">Turning it up! 🔥</span>
+          <span class="quick-msg-chip" data-quick="Taking a short pause. ⏸️">Taking a pause ⏸️</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Custom Sequencer -->
     <section class="panel tab-content" id="tab-sequencer" style="display:none">
       <h2>Custom Step Sequencer</h2>
       <p class="hint">Chain custom pulses into a sequence.</p>
@@ -197,6 +220,9 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
   const playSeqBtn = root.querySelector("#play-seq") as HTMLButtonElement;
   const loopSeqBtn = root.querySelector("#loop-seq") as HTMLButtonElement;
   const seqInput = root.querySelector("#seq-input") as HTMLInputElement;
+  const msgInput = root.querySelector("#msg-input") as HTMLInputElement;
+  const sendMsgBtn = root.querySelector("#send-msg-btn") as HTMLButtonElement;
+  const quickMsgChips = [...root.querySelectorAll<HTMLElement>("[data-quick]")];
 
   let continuousTouch = true;
   let touchInterval: number | null = null;
@@ -244,6 +270,7 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
     panicStop.disabled = !enabled;
     playSeqBtn.disabled = !enabled;
     loopSeqBtn.disabled = !enabled;
+    sendMsgBtn.disabled = !enabled;
     patternCards.forEach((b) => (b.disabled = !enabled));
     disconnectBtn.disabled = !conn?.open;
     panicStop.style.display = enabled ? "flex" : "none";
@@ -490,10 +517,22 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
     setControlsEnabled(false);
     paintStatus();
 
-    peer = new Peer({ debug: 0 });
+    peer = new Peer({
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" },
+          { urls: "stun:stun.cloudflare.com:3478" },
+        ],
+      },
+    });
 
     peer.on("open", () => {
-      conn = peer!.connect(peerIdFor(currentSession), { reliable: true });
+      const targetPeerId = peerIdFor(currentSession);
+      net.textContent = `Looking for host session (${currentSession})...`;
+      conn = peer!.connect(targetPeerId, { reliable: true });
 
       conn.on("open", () => {
         state = "open";
@@ -502,7 +541,7 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
         send({
           type: "auth_request",
           token: adminPass,
-          clientName: "Admin (" + navigator.platform + ")",
+          clientName: "Admin (" + (navigator.platform || "Web") + ")",
         });
 
         if (pingInterval) clearInterval(pingInterval);
@@ -571,6 +610,32 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
     authenticated = false;
     setControlsEnabled(false);
     paintStatus();
+  });
+
+  // Message sending logic
+  const sendPopupAlert = (customText?: string) => {
+    const text = (customText ?? msgInput.value).trim();
+    if (!text) return;
+    send({
+      type: "flash_message",
+      text,
+      sender: "Admin",
+      duration: 6000,
+    });
+    if (!customText) msgInput.value = "";
+    net.textContent = `Sent banner: "${text}"`;
+  };
+
+  sendMsgBtn.addEventListener("click", () => sendPopupAlert());
+  msgInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendPopupAlert();
+  });
+
+  quickMsgChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const q = chip.dataset.quick;
+      if (q) sendPopupAlert(q);
+    });
   });
 
   // Inputs

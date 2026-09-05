@@ -6,11 +6,6 @@ import { capabilities, keepAwake, peerIdFor, randomCode, sanitizeSessionId } fro
 const SESSION_KEY = "ps5-vibe-session-id";
 const PASS_KEY = "ps5-vibe-admin-pass";
 
-function pill(ok: boolean | null, label: string, detail: string) {
-  const cls = ok === true ? "ok" : ok === false ? "bad" : "warn";
-  return `<span class="pill"><span class="dot ${cls}"></span>${label}: ${detail}</span>`;
-}
-
 export function renderHost(root: HTMLElement) {
   let sessionId = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY) || randomCode(6).toLowerCase();
   let adminPass = localStorage.getItem(PASS_KEY) || "1234";
@@ -23,28 +18,41 @@ export function renderHost(root: HTMLElement) {
   let awake = false;
   const logs: string[] = [];
 
-  root.innerHTML = `
+    root.innerHTML = `
+    <div id="toast-container" class="toast-container"></div>
     <div class="top">
       <div>
-        <div class="brand">ps5-vibe · host bridge</div>
-        <h1>Phone + DualSense</h1>
-        <p class="sub">Keeps Bluetooth link alive. Only authorized admins with your passcode can rumble.</p>
+        <div class="brand">ps5-vibe · controller bridge</div>
+        <h1 id="host-title">Gamepad Receiver</h1>
+        <p class="sub">Keeps Bluetooth link alive. Pair PS5 or Xbox controller, tap any button, and leave this open.</p>
       </div>
       <button class="ghost" id="home">Home</button>
     </div>
 
-    <section class="panel">
-      <h2>Status & Health</h2>
-      <div class="row" id="caps"></div>
-      <div class="grid" style="margin-top:12px" id="stats"></div>
+    <section class="panel" style="border-color:var(--accent-2);background:rgba(122, 240, 200, 0.05)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:0.1em">Your Session Link</div>
+          <div class="code" id="code-display" style="font-size:22px;letter-spacing:0.08em;word-break:break-all;text-align:left;padding:4px 0"></div>
+        </div>
+        <button class="secondary" id="copy" style="font-size:13px;padding:10px 16px">Copy Link</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span class="pill"><span class="dot ${peerState === "open" ? "ok" : "warn"}"></span>Server: ${peerState}</span>
+        <span class="pill" id="pad-badge"><span class="dot bad"></span>Waiting for controller</span>
+        <span class="pill" id="awake-badge"><span class="dot warn"></span>Screen Wake: Off</span>
+      </div>
     </section>
 
     <section class="panel">
-      <h2>DualSense Controller</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Controller (<span id="pad-type-name">Detecting...</span>)</h2>
+        <span id="haptic-badge" class="pill" style="font-size:11px">Rumble: checking</span>
+      </div>
       <div class="buttons" id="btns"></div>
       <p class="hint" id="pad-hint" style="margin-top:8px"></p>
       <div class="row" style="margin-top:12px">
-        <button id="buzz">Test rumble</button>
+        <button id="buzz">Test Rumble</button>
         <button class="secondary" id="stop">Stop</button>
       </div>
     </section>
@@ -52,24 +60,18 @@ export function renderHost(root: HTMLElement) {
     <section class="panel">
       <h2>Session & Admin Passcode</h2>
       <div class="stack">
-        <label class="field">Session Name / ID (Share this with admin)
+        <label class="field">Session Name / ID (Any lowercase text)
           <div style="display:flex;gap:8px">
             <input id="session-input" type="text" value="${sessionId}" maxlength="24" style="text-transform:none;letter-spacing:0.05em" />
             <button class="secondary" id="save-session" style="white-space:nowrap">Apply</button>
           </div>
         </label>
-        <label class="field">Admin Passcode (Required for anyone to send rumble)
+        <label class="field">Admin Passcode (Password you enter on the Admin panel)
           <div style="display:flex;gap:8px">
             <input id="pass-input" type="text" value="${adminPass}" maxlength="32" style="text-transform:none;letter-spacing:0.05em" />
             <button class="secondary" id="save-pass" style="white-space:nowrap">Update</button>
           </div>
         </label>
-        <div class="code" id="code-display" style="font-size:22px;letter-spacing:0.12em;word-break:break-all"></div>
-        <p class="hint">Keep this tab open and in foreground. Wake Lock keeps screen active so Bluetooth remains uninterrupted.</p>
-        <div class="stack" style="margin-top:8px">
-          <button class="secondary" id="copy">Copy Admin Remote Link</button>
-          <button class="ghost" id="rand-session">Generate New Session ID</button>
-        </div>
       </div>
     </section>
 
@@ -84,9 +86,12 @@ export function renderHost(root: HTMLElement) {
     </section>
   `;
 
+  const toastContainer = root.querySelector("#toast-container")!;
   const logEl = root.querySelector("#log")!;
-  const capsEl = root.querySelector("#caps")!;
-  const statsEl = root.querySelector("#stats")!;
+  const padBadge = root.querySelector("#pad-badge")!;
+  const awakeBadge = root.querySelector("#awake-badge")!;
+  const padTypeName = root.querySelector("#pad-type-name")!;
+  const hapticBadge = root.querySelector("#haptic-badge")!;
   const btnsEl = root.querySelector("#btns")!;
   const padHint = root.querySelector("#pad-hint")!;
   const codeEl = root.querySelector("#code-display")!;
@@ -94,6 +99,22 @@ export function renderHost(root: HTMLElement) {
   const remotesListEl = root.querySelector("#remotes-list")!;
   const sessionInput = root.querySelector("#session-input") as HTMLInputElement;
   const passInput = root.querySelector("#pass-input") as HTMLInputElement;
+
+  const showToast = (text: string, sender = "Admin Message", durationMs = 6000) => {
+    const el = document.createElement("div");
+    el.className = "toast-msg";
+    el.innerHTML = `
+      <div class="toast-sender">🔔 ${sender}</div>
+      <div class="toast-text">${text}</div>
+    `;
+    toastContainer.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(-10px) scale(0.95)";
+      el.style.transition = "all 0.3s ease";
+      setTimeout(() => el.remove(), 300);
+    }, durationMs);
+  };
 
   const log = (text: string) => {
     const line = `${new Date().toLocaleTimeString()}  ${text}`;
@@ -123,7 +144,7 @@ export function renderHost(root: HTMLElement) {
           </div>
           <span class="pill">
             <span class="dot ${info.auth ? "ok" : "warn"}"></span>
-            ${info.auth ? "Authorized Admin" : "Guest (Read Only)"}
+            ${info.auth ? "Authorized Admin" : "Guest (Locked)"}
           </span>
         </div>
       `);
@@ -132,39 +153,31 @@ export function renderHost(root: HTMLElement) {
   };
 
   const paint = () => {
-    const caps = capabilities();
-    const authedCount = [...remotes.values()].filter((r) => r.auth).length;
+    padTypeName.textContent = pad.connected ? pad.modelLabel : "No Controller";
+    hapticBadge.innerHTML = `<span class="dot ${pad.hasVibration ? "ok" : "bad"}"></span>${pad.hasVibration ? "Rumble Ready" : "No Rumble"}`;
 
-    capsEl.innerHTML = [
-      pill(caps.secure, "HTTPS", caps.secure ? "ok" : "required"),
-      pill(caps.gamepadApi, "Gamepad API", caps.gamepadApi ? "ready" : "missing"),
-      pill(caps.peerApi, "WebRTC", caps.peerApi ? "ready" : "missing"),
-      pill(pad.connected, "Controller", pad.connected ? "connected" : "waiting for button"),
-      pill(pad.hasVibration, "Dual-Rumble", pad.hasVibration ? pad.hapticType : "unavailable"),
-      pill(peerState === "open", "Room Server", peerState),
-      pill(awake, "Screen Wake", awake ? "active" : "off"),
-      pill(authedCount > 0, "Admin Link", authedCount > 0 ? `${authedCount} active` : "waiting"),
-    ].join("");
+    padBadge.innerHTML = `<span class="dot ${pad.connected ? "ok" : "bad"}"></span>${pad.connected ? pad.modelLabel : "Waiting for button press"}`;
+    awakeBadge.innerHTML = `<span class="dot ${awake ? "ok" : "warn"}"></span>Screen Wake: ${awake ? "Active" : "Off"}`;
 
-    statsEl.innerHTML = `
-      <div class="stat"><div class="k">DualSense Model</div><div class="v">${pad.id}</div></div>
-      <div class="stat"><div class="k">Mapping & Inputs</div><div class="v">${pad.mapping} · ${pad.buttons} btn · ${pad.axes} axes</div></div>
-      <div class="stat"><div class="k">Last Vibration Trigger</div><div class="v">${lastRumble}</div></div>
-      <div class="stat"><div class="k">Buttons Held</div><div class="v">${pad.pressed.join(" ") || "—"}</div></div>
-    `;
+    // Controller specific button layout
+    const isXbox = pad.controllerType === "xbox";
+    const psLabels = ["×", "○", "□", "△", "L1", "R1", "L2", "R2", "Create", "Opt", "L3", "R3", "↑", "↓", "←", "→", "PS", "Pad"];
+    const xboxLabels = ["A", "B", "X", "Y", "LB", "RB", "LT", "RT", "View", "Menu", "LS", "RS", "↑", "↓", "←", "→", "Xbox", "Share"];
+    const labels = isXbox ? xboxLabels : psLabels;
 
-    const names = ["×", "○", "□", "△", "L1", "R1", "L2", "R2", "Create", "Opt", "L3", "R3", "↑", "↓", "←", "→", "PS", "Pad"];
-    btnsEl.innerHTML = names
-      .map((n, i) => {
-        const label = ["Cross", "Circle", "Square", "Triangle", "L1", "R1", "L2", "R2", "Create", "Options", "L3", "R3", "Up", "Down", "Left", "Right", "PS", "Touch"][i];
-        const on = pad.pressed.includes(label);
-        return `<span class="btn-chip ${on ? "on" : ""}">${n}</span>`;
+    btnsEl.innerHTML = labels
+      .map((chipLabel, i) => {
+        const fullLabel = isXbox
+          ? ["A", "B", "X", "Y", "LB", "RB", "LT", "RT", "View", "Menu", "LS", "RS", "D-Up", "D-Down", "D-Left", "D-Right", "Xbox", "Share"][i]
+          : ["Cross (×)", "Circle (○)", "Square (□)", "Triangle (△)", "L1", "R1", "L2", "R2", "Create", "Options", "L3", "R3", "D-Up", "D-Down", "D-Left", "D-Right", "PS", "Touchpad"][i];
+        const on = pad.pressed.includes(fullLabel);
+        return `<span class="btn-chip ${on ? "on" : ""}">${chipLabel}</span>`;
       })
       .join("");
 
     padHint.textContent = pad.connected
-      ? "DualSense is paired & responding to inputs. Admin can trigger vibration remotely."
-      : "No controller detected yet. Pair in Android Bluetooth settings, then press Cross/PS on the controller.";
+      ? `${pad.modelLabel} is connected and live. Admin can trigger vibration remotely.`
+      : "Pair your PS5 DualSense or Xbox Series X controller in Android Bluetooth settings, then press any button.";
     codeEl.textContent = `Session: ${sessionId}`;
     updateRemotesList();
   };
@@ -204,6 +217,12 @@ export function renderHost(root: HTMLElement) {
       return;
     }
 
+    if (msg.type === "flash_message") {
+      showToast(msg.text, msg.sender || "Admin", msg.duration || 6000);
+      log(`Message on screen: "${msg.text}"`);
+      return;
+    }
+
     if (msg.type === "auth_request") {
       const inputToken = (msg.token || "").trim();
       const expected = (adminPass || "").trim();
@@ -214,7 +233,8 @@ export function renderHost(root: HTMLElement) {
         if (msg.clientName) client.name = msg.clientName;
         remotes.set(from, client);
         from.send({ type: "auth_response", success: true, hostSessionId: sessionId });
-        log(`Admin authenticated successfully: ${client.name}`);
+        showToast("Admin successfully connected and authenticated!", "System Notice", 4000);
+        log(`Admin authenticated: ${client.name}`);
       } else {
         from.send({ type: "auth_response", success: false, error: "Incorrect admin passcode" });
         log(`Failed auth attempt from ${from.peer}`);
@@ -264,7 +284,17 @@ export function renderHost(root: HTMLElement) {
     peerState = "connecting";
     paint();
     const cleanId = sanitizeSessionId(sessionId);
-    peer = new Peer(peerIdFor(cleanId), { debug: 0 });
+    peer = new Peer(peerIdFor(cleanId), {
+      debug: 0,
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" },
+          { urls: "stun:stun.cloudflare.com:3478" },
+        ],
+      },
+    });
 
     peer.on("open", () => {
       peerState = "open";
