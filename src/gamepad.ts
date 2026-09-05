@@ -177,25 +177,26 @@ export async function playRumble(
   const strongMagnitude = clamp01(strong);
 
   // Always re-query all connected gamepads right before triggering
-  let pad = getActiveGamepad();
-
-  // If active didn't have actuator, scan all connected gamepads
+  const pad = getActiveGamepad();
   const allRaw = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter((p): p is Gamepad => Boolean(p && p.connected)) : [];
-  
-  for (const candidate of [pad, ...allRaw]) {
-    if (!candidate) continue;
-    const pAny = candidate as unknown as Record<string, unknown>;
-    const actuator = (candidate.vibrationActuator ||
-      (Array.isArray(pAny.hapticActuators) ? pAny.hapticActuators[0] : null)) as
-      | (GamepadHapticActuator & {
-          playEffect?: (type: string, params: unknown) => Promise<unknown>;
-          pulse?: (val: number, dur: number) => Promise<boolean>;
-        })
-      | null
-      | undefined;
+  const candidates = [pad, ...allRaw].filter((p): p is Gamepad => Boolean(p));
+  // Deduplicate gamepads
+  const uniquePads = Array.from(new Set(candidates));
 
-    if (actuator) {
-      // 1. Standard Gamepad dual-rumble
+  const errors: string[] = [];
+
+  for (const candidate of uniquePads) {
+    const pAny = candidate as unknown as Record<string, unknown>;
+    // Try vibrationActuator as well as hapticActuators array or custom properties
+    const actuatorList: any[] = [];
+    if (candidate.vibrationActuator) actuatorList.push(candidate.vibrationActuator);
+    if (Array.isArray(pAny.hapticActuators)) actuatorList.push(...pAny.hapticActuators);
+    if (pAny.haptics) actuatorList.push(pAny.haptics);
+
+    for (const actuator of actuatorList) {
+      if (!actuator) continue;
+
+      // 1. Standard Gamepad dual-rumble playEffect
       if (typeof actuator.playEffect === "function") {
         try {
           await actuator.playEffect("dual-rumble", {
@@ -205,37 +206,53 @@ export async function playRumble(
             strongMagnitude,
           });
           return "dual-rumble";
-        } catch {
-          // fallback to pulse or next actuator
+        } catch (e) {
+          errors.push(`playEffect(dual-rumble): ${e}`);
+          // Some browsers/devices expect "trigger-rumble"
+          try {
+            await actuator.playEffect("trigger-rumble", {
+              startDelay: 0,
+              duration: ms,
+              weakMagnitude,
+              strongMagnitude,
+            });
+            return "trigger-rumble";
+          } catch (e2) {
+            errors.push(`playEffect(trigger-rumble): ${e2}`);
+          }
         }
       }
 
-      // 2. Pulse method fallback
+      // 2. Pulse method fallback (common in Firefox / WebXR / older Chromium)
       if (typeof actuator.pulse === "function") {
         try {
           await actuator.pulse(Math.max(weakMagnitude, strongMagnitude), ms);
           return "pulse";
-        } catch {
-          // fallback
+        } catch (e) {
+          errors.push(`pulse: ${e}`);
         }
       }
     }
   }
 
-  // 3. Fallback to phone hardware vibration if controller actuator is pending permission
+  // 3. Fallback to device hardware vibration (Android phone/tablet)
   if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
     try {
-      navigator.vibrate(ms);
-      return pad ? "controller (phone fallback)" : "phone vibration";
-    } catch {
-      // ignore
+      const ok = navigator.vibrate(ms);
+      if (ok) {
+        return uniquePads.length > 0 ? "phone vibration (controller actuator not exposed)" : "phone vibration";
+      }
+    } catch (e) {
+      errors.push(`vibrate: ${e}`);
     }
   }
 
-  if (!pad && allRaw.length === 0) {
-    throw new Error("No controller detected. Please tap any button on your controller.");
+  if (uniquePads.length === 0) {
+    throw new Error("No controller detected. Please tap any button on your controller to wake it up.");
   }
-  throw new Error("Controller connected but vibration is blocked or unsupported by browser.");
+
+  const detail = errors.length > 0 ? ` (${errors.join("; ")})` : "";
+  throw new Error(`Controller detected (${uniquePads[0].id}), but vibration is blocked or unsupported by this browser. Tip: On Android Chrome, press a controller button and tap the screen once.${detail}`);
 }
 
 export async function stopRumble(): Promise<void> {
