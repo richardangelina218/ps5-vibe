@@ -22,11 +22,39 @@ export function isAndroidChrome(): boolean {
 }
 
 export async function keepAwake(): Promise<boolean> {
+  // 1. Try standard Wake Lock API
   try {
-    const nav = navigator as Navigator & {
-      wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> };
-    };
-    await nav.wakeLock?.request("screen");
+    if ("wakeLock" in navigator) {
+      const nav = navigator as Navigator & {
+        wakeLock: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> };
+      };
+      await nav.wakeLock.request("screen");
+      return true;
+    }
+  } catch {
+    // Falls through to fallback or user-gesture requirement
+  }
+
+  // 2. Invisible loop audio/video element fallback to keep screen alive
+  try {
+    let dummy = document.getElementById("dummy-awake-media") as HTMLVideoElement | null;
+    if (!dummy) {
+      dummy = document.createElement("video");
+      dummy.id = "dummy-awake-media";
+      dummy.setAttribute("playsinline", "");
+      dummy.setAttribute("loop", "");
+      dummy.setAttribute("muted", "");
+      dummy.style.position = "fixed";
+      dummy.style.top = "-9999px";
+      dummy.style.opacity = "0.01";
+      dummy.style.pointerEvents = "none";
+      dummy.style.width = "1px";
+      dummy.style.height = "1px";
+      // 1x1 empty black frame base64 webm
+      dummy.src = "data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQACFHVZXRtaVRUQWRjT3ZlcmNsb2NrZWQ=";
+      document.body.appendChild(dummy);
+      await dummy.play();
+    }
     return true;
   } catch {
     return false;

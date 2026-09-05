@@ -1,18 +1,18 @@
 :root {
   color-scheme: dark;
-  --bg: #07080d;
-  --bg-2: #10131c;
-  --panel: #161b28;
-  --line: #2a3348;
-  --text: #eef2ff;
-  --muted: #93a0bb;
-  --accent: #4d8dff;
-  --accent-2: #7af0c8;
-  --warn: #ffb45a;
-  --bad: #ff5d7a;
-  --good: #3ee0a0;
-  --radius: 18px;
-  --font: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --bg: #0d0a11;
+  --bg-2: #191421;
+  --panel: #201a2c;
+  --line: #352b47;
+  --text: #f5effa;
+  --muted: #a698b5;
+  --accent: #d94b76;       /* Warm intimate rose */
+  --accent-2: #f28ca9;     /* Soft sensual blush */
+  --warn: #e8a86b;        /* Candlelight warm amber */
+  --bad: #e04b5c;
+  --good: #57cca0;
+  --radius: 20px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 * {
@@ -24,8 +24,8 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(1200px 600px at 10% -10%, #1a2a4d 0%, transparent 55%),
-    radial-gradient(900px 500px at 110% 10%, #16352e 0%, transparent 50%),
+    radial-gradient(1100px 700px at 15% -10%, #2f1730 0%, transparent 60%),
+    radial-gradient(900px 600px at 90% 20%, #25122b 0%, transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: var(--font);

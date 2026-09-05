@@ -1,40 +1,32 @@
 import { renderHost } from "./host";
 import { renderRemote } from "./remote";
-import { capabilities, isAndroidChrome } from "./util";
 
 const app = document.querySelector("#app")!;
 
 function renderHome() {
-  const caps = capabilities();
   app.innerHTML = `
     <div class="top">
       <div>
-        <div class="brand">ps5-vibe</div>
-        <h1>Remote DualSense rumble</h1>
-        <p class="sub">Android Chrome holds the Bluetooth gamepad. Any other browser with the room code can fire vibration.</p>
+        <div class="brand">touch · pulse · connect</div>
+        <h1>Intimate Touch</h1>
+        <p class="sub">A private space to share touch, rhythm, and gentle sensations from anywhere.</p>
       </div>
     </div>
     <section class="panel">
-      <h2>This device</h2>
-      <div class="row">
-        <span class="pill"><span class="dot ${caps.secure ? "ok" : "bad"}"></span>Secure context ${caps.secure ? "yes" : "no"}</span>
-        <span class="pill"><span class="dot ${caps.gamepadApi ? "ok" : "bad"}"></span>Gamepad API</span>
-        <span class="pill"><span class="dot ${caps.peerApi ? "ok" : "bad"}"></span>WebRTC</span>
-        <span class="pill"><span class="dot ${isAndroidChrome() ? "ok" : "warn"}"></span>${isAndroidChrome() ? "Android Chrome" : "Not Android Chrome"}</span>
-      </div>
-      <p class="hint" style="margin-top:12px">
-        Pair the PS5 controller in the phone’s Bluetooth settings first. The site uses the Gamepad API (not a hidden BLE hack), which is what Android Chrome actually supports for DualSense rumble.
+      <h2>How It Works</h2>
+      <p class="hint" style="line-height:1.6">
+        One partner connects their controller over Bluetooth and keeps this screen nearby. The other partner controls the sensations, rhythms, and sends sweet messages directly to their screen.
       </p>
     </section>
     <section class="panel choice">
-      <h2>Choose Mode</h2>
+      <h2>Select Your Role</h2>
       <button id="host">
-        🎮 Connect PS5 Controller (The Receiver)
-        <small>Open this on the phone paired to the DualSense over Bluetooth.</small>
+        🌸 Holding The Controller
+        <small>Pair your controller, relax, and keep this screen open to receive touch.</small>
       </button>
       <button class="secondary" id="remote">
-        🎛️ Admin Remote Control (You)
-        <small>Log in with your passcode to trigger vibrations, patterns & XY touch controls.</small>
+        ✨ The Touch Controller
+        <small>Connect with your private passcode to send sensations, vibrations & sweet messages.</small>
       </button>
     </section>
   `;

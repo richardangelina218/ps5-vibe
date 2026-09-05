@@ -27,27 +27,27 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
   root.innerHTML = `
     <div class="top">
       <div>
-        <div class="brand">ps5-vibe · admin remote</div>
-        <h1>Controller Admin Panel</h1>
-        <p class="sub">Full remote control over DualSense vibration parameters and patterns.</p>
+        <div class="brand">intimate sanctuary</div>
+        <h1>The Touch Controller</h1>
+        <p class="sub">Guide the sensations and rhythm on your partner's controller.</p>
       </div>
-      <button class="ghost" id="home">Home</button>
+      <button class="ghost" id="home">Leave</button>
     </div>
 
     <!-- Session & Login Panel -->
-    <section class="panel">
-      <h2>Session Authentication</h2>
+    <section class="panel" style="border-color:var(--accent);background:rgba(217, 75, 118, 0.08)">
+      <h2>Private Connection</h2>
       <div class="stack">
         <div class="grid">
-          <label class="field">Host Session ID
+          <label class="field">Partner's Room Code / Name
             <input id="session-code" type="text" maxlength="24" value="${currentSession}" placeholder="e.g. room1" style="text-transform:none;letter-spacing:0.05em" />
           </label>
-          <label class="field">Admin Passcode
+          <label class="field">Private Passcode
             <input id="admin-pass" type="password" maxlength="32" value="${adminPass}" placeholder="Passcode" style="letter-spacing:0.05em" />
           </label>
         </div>
         <div style="display:flex;gap:8px">
-          <button id="join" style="flex:1">Connect as Admin</button>
+          <button id="join" style="flex:1">Connect To Partner</button>
           <button class="secondary" id="disconnect-btn" disabled>Disconnect</button>
         </div>
         <div class="row" style="align-items:center;justify-content:space-between;margin-top:4px">
@@ -125,54 +125,54 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
 
     <!-- TAB 3: Dynamic Patterns -->
     <section class="panel tab-content" id="tab-patterns" style="display:none">
-      <h2>Preset Dynamic Waveforms & Loops</h2>
-      <p class="hint">Select a pattern below to run live. Patterns repeat seamlessly until stopped.</p>
+      <h2>Sensual Rhythms & Waves</h2>
+      <p class="hint">Select a rhythm below to play continuously until you stop it.</p>
       <div class="pattern-grid" style="margin-top:12px">
         <button class="pattern-card" data-pat="heartbeat" disabled>
           <strong>Heartbeat</strong>
-          <span>Lub-dub rhythmic pulse</span>
+          <span>Gentle lub-dub rhythm</span>
         </button>
         <button class="pattern-card" data-pat="escalate" disabled>
           <strong>Crescendo</strong>
-          <span>Ramps up from 10% to 100%</span>
+          <span>Slow, building anticipation</span>
         </button>
         <button class="pattern-card" data-pat="wave" disabled>
-          <strong>Sine Wave</strong>
-          <span>Smooth oscillating wave</span>
+          <strong>Ocean Wave</strong>
+          <span>Rolling, rhythmic swells</span>
         </button>
         <button class="pattern-card" data-pat="flutter" disabled>
-          <strong>Butterfly / Flutter</strong>
-          <span>Fast rapid high-frequency buzz</span>
+          <strong>Butterfly Kisses</strong>
+          <span>Soft rapid tickles</span>
         </button>
         <button class="pattern-card" data-pat="earthquake" disabled>
-          <strong>Earthquake</strong>
-          <span>Heavy erratic low-end rumble</span>
+          <strong>Deep Tremor</strong>
+          <span>Intense, deep rumbling</span>
         </button>
         <button class="pattern-card" data-pat="staccato" disabled>
-          <strong>Machine Staccato</strong>
-          <span>Crisp sharp metronome bursts</span>
+          <strong>Teasing Taps</strong>
+          <span>Playful rhythmic pulses</span>
         </button>
       </div>
     </section>
 
     <!-- TAB 4: Pop-up Messages to Host Screen -->
     <section class="panel tab-content" id="tab-message" style="display:none">
-      <h2>Send Pop-up Banner to Screen</h2>
-      <p class="hint">Type a message below. It will immediately pop up on the other person's phone screen with an alert banner.</p>
+      <h2>Whisper A Note To Their Screen</h2>
+      <p class="hint">Send a sweet note or question. It will softly pop up across their phone screen.</p>
       <div class="stack" style="margin-top:12px">
-        <label class="field">Message Content
-          <input id="msg-input" type="text" placeholder="e.g. Ready for round two?" maxlength="120" style="text-transform:none;letter-spacing:normal" />
+        <label class="field">Message
+          <input id="msg-input" type="text" placeholder="e.g. Thinking of you right now..." maxlength="120" style="text-transform:none;letter-spacing:normal" />
         </label>
         <div style="display:flex;gap:8px">
-          <button id="send-msg-btn" style="flex:1" disabled>Send Pop-up Alert</button>
+          <button id="send-msg-btn" style="flex:1" disabled>Send Whisper</button>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Quick Presets:</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Quick Whispers:</div>
         <div class="quick-msg-row">
-          <span class="quick-msg-chip" data-quick="Ready? Starting in 3, 2, 1...">Ready? 3, 2, 1...</span>
-          <span class="quick-msg-chip" data-quick="Hold tight! ⚡">Hold tight! ⚡</span>
-          <span class="quick-msg-chip" data-quick="How does that vibration level feel?">How does it feel?</span>
-          <span class="quick-msg-chip" data-quick="Turning up intensity! 🔥">Turning it up! 🔥</span>
-          <span class="quick-msg-chip" data-quick="Taking a short pause. ⏸️">Taking a pause ⏸️</span>
+          <span class="quick-msg-chip" data-quick="How does this feel? ✨">How does this feel? ✨</span>
+          <span class="quick-msg-chip" data-quick="Just relax and close your eyes... 🌸">Relax and close your eyes... 🌸</span>
+          <span class="quick-msg-chip" data-quick="Ready for a little more? 🔥">Ready for a little more? 🔥</span>
+          <span class="quick-msg-chip" data-quick="Thinking of you right now 💕">Thinking of you right now 💕</span>
+          <span class="quick-msg-chip" data-quick="Holding you close... 💫">Holding you close... 💫</span>
         </div>
       </div>
     </section>

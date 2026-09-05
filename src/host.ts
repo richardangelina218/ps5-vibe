@@ -22,23 +22,34 @@ export function renderHost(root: HTMLElement) {
     <div id="toast-container" class="toast-container"></div>
     <div class="top">
       <div>
-        <div class="brand">ps5-vibe · controller bridge</div>
-        <h1 id="host-title">Gamepad Receiver</h1>
-        <p class="sub">Keeps Bluetooth link alive. Pair PS5 or Xbox controller, tap any button, and leave this open.</p>
+        <div class="brand">private sanctuary</div>
+        <h1 id="host-title">Your Receiver</h1>
+        <p class="sub">Keep this page open and controller nearby. Your partner will take care of the rest.</p>
       </div>
-      <button class="ghost" id="home">Home</button>
+      <button class="ghost" id="home">Leave</button>
     </div>
 
-    <section class="panel" style="border-color:var(--accent-2);background:rgba(122, 240, 200, 0.05)">
+    <!-- Friendly Tap To Activate Banner (Required by Android Chrome) -->
+    <div id="activate-banner" style="background:linear-gradient(135deg, rgba(217, 75, 118, 0.2), rgba(242, 140, 169, 0.15));border:1px solid var(--accent);border-radius:18px;padding:14px 18px;margin-bottom:14px;cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <strong style="color:var(--accent-2);font-size:14px">✨ Tap screen to enable gentle vibrations</strong>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Android requires one screen tap to activate gamepad vibrations and keep screen awake.</div>
+        </div>
+        <button id="activate-btn" style="padding:8px 14px;font-size:12px;min-height:auto">Tap to Activate</button>
+      </div>
+    </div>
+
+    <section class="panel" style="border-color:var(--accent);background:rgba(217, 75, 118, 0.08)">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:0.1em">Your Session Link</div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--accent-2);letter-spacing:0.1em;font-weight:600">Your Private Invitation Link</div>
           <div class="code" id="code-display" style="font-size:22px;letter-spacing:0.08em;word-break:break-all;text-align:left;padding:4px 0"></div>
         </div>
-        <button class="secondary" id="copy" style="font-size:13px;padding:10px 16px">Copy Link</button>
+        <button class="secondary" id="copy" style="font-size:13px;padding:10px 18px;border-color:var(--accent)">Share Link</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <span class="pill"><span class="dot ${peerState === "open" ? "ok" : "warn"}"></span>Server: ${peerState}</span>
+      <div class="row" style="margin-top:12px">
+        <span class="pill" id="server-badge"><span class="dot warn"></span>Connecting to room...</span>
         <span class="pill" id="pad-badge"><span class="dot bad"></span>Waiting for controller</span>
         <span class="pill" id="awake-badge"><span class="dot warn"></span>Screen Wake: Off</span>
       </div>
@@ -46,27 +57,27 @@ export function renderHost(root: HTMLElement) {
 
     <section class="panel">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2>Controller (<span id="pad-type-name">Detecting...</span>)</h2>
-        <span id="haptic-badge" class="pill" style="font-size:11px">Rumble: checking</span>
+        <h2>Connected Controller (<span id="pad-type-name">Detecting...</span>)</h2>
+        <span id="haptic-badge" class="pill" style="font-size:11px">Sensations: checking</span>
       </div>
-      <div class="buttons" id="btns"></div>
-      <p class="hint" id="pad-hint" style="margin-top:8px"></p>
+      <div class="buttons" id="btns" style="margin-top:8px"></div>
+      <p class="hint" id="pad-hint" style="margin-top:10px"></p>
       <div class="row" style="margin-top:12px">
-        <button id="buzz">Test Rumble</button>
+        <button id="buzz">Gentle Test Pulse</button>
         <button class="secondary" id="stop">Stop</button>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Session & Admin Passcode</h2>
+      <h2>Private Room Settings</h2>
       <div class="stack">
-        <label class="field">Session Name / ID (Any lowercase text)
+        <label class="field">Private Room Code / Name
           <div style="display:flex;gap:8px">
             <input id="session-input" type="text" value="${sessionId}" maxlength="24" style="text-transform:none;letter-spacing:0.05em" />
             <button class="secondary" id="save-session" style="white-space:nowrap">Apply</button>
           </div>
         </label>
-        <label class="field">Admin Passcode (Password you enter on the Admin panel)
+        <label class="field">Passcode (Your partner enters this to control)
           <div style="display:flex;gap:8px">
             <input id="pass-input" type="text" value="${adminPass}" maxlength="32" style="text-transform:none;letter-spacing:0.05em" />
             <button class="secondary" id="save-pass" style="white-space:nowrap">Update</button>
@@ -76,18 +87,13 @@ export function renderHost(root: HTMLElement) {
     </section>
 
     <section class="panel">
-      <h2>Connected Remotes (<span id="remotes-count">0</span>)</h2>
-      <div id="remotes-list" class="stack" style="font-size:13px;color:var(--muted)">No remote connected yet.</div>
-    </section>
-
-    <section class="panel">
-      <h2>Event Log</h2>
-      <div class="log" id="log"></div>
+      <h2>Connection Status (<span id="remotes-count">0</span> connected)</h2>
+      <div id="remotes-list" class="stack" style="font-size:13px;color:var(--muted)">Waiting for your partner to connect...</div>
     </section>
   `;
 
   const toastContainer = root.querySelector("#toast-container")!;
-  const logEl = root.querySelector("#log")!;
+  const serverBadge = root.querySelector("#server-badge")!;
   const padBadge = root.querySelector("#pad-badge")!;
   const awakeBadge = root.querySelector("#awake-badge")!;
   const padTypeName = root.querySelector("#pad-type-name")!;
@@ -99,12 +105,24 @@ export function renderHost(root: HTMLElement) {
   const remotesListEl = root.querySelector("#remotes-list")!;
   const sessionInput = root.querySelector("#session-input") as HTMLInputElement;
   const passInput = root.querySelector("#pass-input") as HTMLInputElement;
+  const activateBanner = root.querySelector("#activate-banner") as HTMLElement;
 
-  const showToast = (text: string, sender = "Admin Message", durationMs = 6000) => {
+  const requestAwakeAndHaptics = async () => {
+    awake = await keepAwake();
+    paint();
+    activateBanner.style.display = "none";
+  };
+
+  activateBanner.addEventListener("click", requestAwakeAndHaptics);
+  window.addEventListener("pointerdown", () => {
+    if (!awake) void requestAwakeAndHaptics();
+  }, { once: true });
+
+  const showToast = (text: string, sender = "Partner Note", durationMs = 7000) => {
     const el = document.createElement("div");
     el.className = "toast-msg";
     el.innerHTML = `
-      <div class="toast-sender">🔔 ${sender}</div>
+      <div class="toast-sender">💌 ${sender}</div>
       <div class="toast-text">${text}</div>
     `;
     toastContainer.appendChild(el);
@@ -119,7 +137,6 @@ export function renderHost(root: HTMLElement) {
   const log = (text: string) => {
     const line = `${new Date().toLocaleTimeString()}  ${text}`;
     logs.unshift(line);
-    logEl.textContent = logs.slice(0, 40).join("\n");
   };
 
   const remoteLink = () => {
@@ -131,7 +148,7 @@ export function renderHost(root: HTMLElement) {
   const updateRemotesList = () => {
     remotesCountEl.textContent = String(remotes.size);
     if (remotes.size === 0) {
-      remotesListEl.innerHTML = `<div>No remote connected yet.</div>`;
+      remotesListEl.innerHTML = `<div>Waiting for your partner to connect...</div>`;
       return;
     }
     const items: string[] = [];
@@ -139,12 +156,12 @@ export function renderHost(root: HTMLElement) {
       items.push(`
         <div class="stat" style="display:flex;justify-content:space-between;align-items:center">
           <div>
-            <strong>${info.name || "Remote " + conn.peer.slice(-4)}</strong>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">ID: ${conn.peer}</div>
+            <strong>${info.name || "Partner " + conn.peer.slice(-4)}</strong>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Session ID: ${conn.peer}</div>
           </div>
           <span class="pill">
             <span class="dot ${info.auth ? "ok" : "warn"}"></span>
-            ${info.auth ? "Authorized Admin" : "Guest (Locked)"}
+            ${info.auth ? "Partner Connected ✨" : "Pending Password"}
           </span>
         </div>
       `);
@@ -153,11 +170,20 @@ export function renderHost(root: HTMLElement) {
   };
 
   const paint = () => {
-    padTypeName.textContent = pad.connected ? pad.modelLabel : "No Controller";
-    hapticBadge.innerHTML = `<span class="dot ${pad.hasVibration ? "ok" : "bad"}"></span>${pad.hasVibration ? "Rumble Ready" : "No Rumble"}`;
+    // Dynamic server status pill
+    if (peerState === "open") {
+      serverBadge.innerHTML = `<span class="dot ok"></span>Room Connected`;
+    } else if (peerState === "error") {
+      serverBadge.innerHTML = `<span class="dot bad"></span>Connecting Retried`;
+    } else {
+      serverBadge.innerHTML = `<span class="dot warn"></span>Connecting (${peerState})...`;
+    }
 
-    padBadge.innerHTML = `<span class="dot ${pad.connected ? "ok" : "bad"}"></span>${pad.connected ? pad.modelLabel : "Waiting for button press"}`;
-    awakeBadge.innerHTML = `<span class="dot ${awake ? "ok" : "warn"}"></span>Screen Wake: ${awake ? "Active" : "Off"}`;
+    padTypeName.textContent = pad.connected ? pad.modelLabel : "No Controller";
+    hapticBadge.innerHTML = `<span class="dot ${pad.hasVibration ? "ok" : "bad"}"></span>${pad.hasVibration ? "Sensations Ready" : "No Rumble"}`;
+
+    padBadge.innerHTML = `<span class="dot ${pad.connected ? "ok" : "bad"}"></span>${pad.connected ? pad.modelLabel : "Waiting for controller (press any button)"}`;
+    awakeBadge.innerHTML = `<span class="dot ${awake ? "ok" : "warn"}"></span>Screen Stay Awake: ${awake ? "Active" : "Off (tap screen)"}`;
 
     // Controller specific button layout
     const isXbox = pad.controllerType === "xbox";
@@ -176,9 +202,9 @@ export function renderHost(root: HTMLElement) {
       .join("");
 
     padHint.textContent = pad.connected
-      ? `${pad.modelLabel} is connected and live. Admin can trigger vibration remotely.`
-      : "Pair your PS5 DualSense or Xbox Series X controller in Android Bluetooth settings, then press any button.";
-    codeEl.textContent = `Session: ${sessionId}`;
+      ? `${pad.modelLabel} is ready and responsive. Relax and let your partner guide the sensations.`
+      : "Pair your PS5 DualSense or Xbox controller in Android Bluetooth settings, then tap any button.";
+    codeEl.textContent = `Room: ${sessionId}`;
     updateRemotesList();
   };
 
