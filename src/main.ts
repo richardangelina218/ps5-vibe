@@ -7,26 +7,26 @@ function renderHome() {
   app.innerHTML = `
     <div class="top">
       <div>
-        <div class="brand">touch · pulse · connect</div>
-        <h1>Intimate Touch</h1>
-        <p class="sub">A private space to share touch, rhythm, and gentle sensations from anywhere.</p>
+        <div class="brand">✨ spark · vibe · giggle 💖</div>
+        <h1>Vibey Touch Room 🎮✨</h1>
+        <p class="sub">Your cozy, playful hideaway to share buzzes, sweet tingles & secret notes!</p>
       </div>
     </div>
     <section class="panel">
-      <h2>How It Works</h2>
-      <p class="hint" style="line-height:1.6">
-        One partner connects their controller over Bluetooth and keeps this screen nearby. The other partner controls the sensations, rhythms, and sends sweet messages directly to their screen.
+      <h2>🍓 How The Magic Works</h2>
+      <p class="hint" style="line-height:1.7">
+        One of you pairs a PS5 DualSense (or any controller) over Bluetooth and relaxes with this screen open. The other takes the magical remote controls to send tickles, waves, custom buzzes, and pop-up love notes! 💕
       </p>
     </section>
     <section class="panel choice">
-      <h2>Select Your Role</h2>
-      <button id="host">
-        🌸 Holding The Controller
-        <small>Pair your controller, relax, and keep this screen open to receive touch.</small>
+      <h2>🎀 Pick Your Side</h2>
+      <button id="host" class="role-btn-host">
+        🧸 Holding The Controller (Receiver)
+        <small>Pair your controller, get comfy, and let your partner buzz you with love! 🌸</small>
       </button>
-      <button class="secondary" id="remote">
-        ✨ The Touch Controller
-        <small>Connect with your private passcode to send sensations, vibrations & sweet messages.</small>
+      <button class="secondary role-btn-remote" id="remote">
+        🪄 The Touch Wizard (Remote Controller)
+        <small>Grab the steering wheel! Send custom rhythms, 2D pad tickles & messages ✨</small>
       </button>
     </section>
   `;

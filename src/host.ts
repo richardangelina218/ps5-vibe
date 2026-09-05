@@ -1,7 +1,7 @@
 import Peer, { DataConnection } from "peerjs";
 import { emptyPad, playRumble, readPad, stopRumble, type PadSnapshot } from "./gamepad";
 import { parseMsg, type WireMsg } from "./protocol";
-import { capabilities, keepAwake, peerIdFor, randomCode, sanitizeSessionId } from "./util";
+import { capabilities, DEFAULT_ICE_SERVERS, keepAwake, peerIdFor, randomCode, sanitizeSessionId } from "./util";
 
 const SESSION_KEY = "ps5-vibe-session-id";
 const PASS_KEY = "ps5-vibe-admin-pass";
@@ -22,31 +22,31 @@ export function renderHost(root: HTMLElement) {
     <div id="toast-container" class="toast-container"></div>
     <div class="top">
       <div>
-        <div class="brand">private sanctuary</div>
-        <h1 id="host-title">Your Receiver</h1>
-        <p class="sub">Keep this page open and controller nearby. Your partner will take care of the rest.</p>
+        <div class="brand">🌸 cozy vibes · snug sanctuary 🍓</div>
+        <h1 id="host-title">🧸 The Receiver Nest</h1>
+        <p class="sub">Keep this tab cozy and your controller powered on. Your partner will tickle and vibrate it from afar! ✨</p>
       </div>
-      <button class="ghost" id="home">Leave</button>
+      <button class="ghost" id="home">🐾 Leave</button>
     </div>
 
-    <!-- Friendly Tap To Activate Banner (Required by Android Chrome) -->
-    <div id="activate-banner" style="background:linear-gradient(135deg, rgba(217, 75, 118, 0.2), rgba(242, 140, 169, 0.15));border:1px solid var(--accent);border-radius:18px;padding:14px 18px;margin-bottom:14px;cursor:pointer">
-      <div style="display:flex;align-items:center;justify-content:space-between">
+    <!-- Friendly Tap To Activate Banner (Required by Android & iOS) -->
+    <div id="activate-banner" style="background:linear-gradient(135deg, #ffd1dc, #ffcbf2);border:2px dashed #ff477e;border-radius:24px;padding:16px 20px;margin-bottom:16px;cursor:pointer;box-shadow:0 8px 24px rgba(255,71,126,0.15)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <strong style="color:var(--accent-2);font-size:14px">✨ Tap screen to enable gentle vibrations</strong>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Android requires one screen tap to activate gamepad vibrations and keep screen awake.</div>
+          <strong style="color:#d90429;font-size:15px;display:block">💖 Tap anywhere to enable gamepad vibrations!</strong>
+          <div style="font-size:12px;color:#590d22;margin-top:2px;font-weight:600">Mobile browsers require 1 tap on screen to grant vibration & screen awake permissions.</div>
         </div>
-        <button id="activate-btn" style="padding:8px 14px;font-size:12px;min-height:auto">Tap to Activate</button>
+        <button id="activate-btn" style="padding:10px 18px;font-size:13px;min-height:auto;flex-shrink:0">🌸 Tap to Wake!</button>
       </div>
     </div>
 
-    <section class="panel" style="border-color:var(--accent);background:rgba(217, 75, 118, 0.08)">
-      <div style="display:flex;justify-content:space-between;align-items:center">
+    <section class="panel panel-highlight">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font-size:11px;text-transform:uppercase;color:var(--accent-2);letter-spacing:0.1em;font-weight:600">Your Private Invitation Link</div>
-          <div class="code" id="code-display" style="font-size:22px;letter-spacing:0.08em;word-break:break-all;text-align:left;padding:4px 0"></div>
+          <div style="font-size:11px;text-transform:uppercase;color:#ff477e;letter-spacing:0.12em;font-weight:800">💌 Your Secret Room Invite Link</div>
+          <div class="code" id="code-display" style="font-size:24px;letter-spacing:0.08em;word-break:break-all;text-align:left;padding:6px 0"></div>
         </div>
-        <button class="secondary" id="copy" style="font-size:13px;padding:10px 18px;border-color:var(--accent)">Share Link</button>
+        <button class="secondary" id="copy" style="font-size:13px;padding:10px 20px;border-color:#ff758f">📋 Share Link 💖</button>
       </div>
       <div class="row" style="margin-top:12px">
         <span class="pill" id="server-badge"><span class="dot warn"></span>Connecting to room...</span>
@@ -56,28 +56,29 @@ export function renderHost(root: HTMLElement) {
     </section>
 
     <section class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2>Connected Controller (<span id="pad-type-name">Detecting...</span>)</h2>
-        <span id="haptic-badge" class="pill" style="font-size:11px">Sensations: checking</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h2>🎮 Connected Controller (<span id="pad-type-name">Searching...</span>)</h2>
+        <span id="haptic-badge" class="pill" style="font-size:12px">Sensations: checking</span>
       </div>
-      <div class="buttons" id="btns" style="margin-top:8px"></div>
-      <p class="hint" id="pad-hint" style="margin-top:10px"></p>
-      <div class="row" style="margin-top:12px">
-        <button id="buzz">Gentle Test Pulse</button>
-        <button class="secondary" id="stop">Stop</button>
+      <div class="buttons" id="btns" style="margin-top:10px"></div>
+      <p class="hint" id="pad-hint" style="margin-top:12px"></p>
+      <div class="row" style="margin-top:14px">
+        <button id="buzz">⚡ Cute Test Pulse (Tap Me!)</button>
+        <button class="secondary" id="stop">🛑 Stop</button>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Private Room Settings</h2>
+      <h2>🔐 Private Room Settings</h2>
       <div class="stack">
-        <label class="field">Private Room Code / Name
+        <label class="field">🌸 Room Code / Name
           <div style="display:flex;gap:8px">
             <input id="session-input" type="text" value="${sessionId}" maxlength="24" style="text-transform:none;letter-spacing:0.05em" />
             <button class="secondary" id="save-session" style="white-space:nowrap">Apply</button>
+            <button class="ghost" id="rand-session" title="Generate random room code" style="white-space:nowrap">🎲 Random</button>
           </div>
         </label>
-        <label class="field">Passcode (Your partner enters this to control)
+        <label class="field">🔑 Secret Passcode (Your partner enters this to control)
           <div style="display:flex;gap:8px">
             <input id="pass-input" type="text" value="${adminPass}" maxlength="32" style="text-transform:none;letter-spacing:0.05em" />
             <button class="secondary" id="save-pass" style="white-space:nowrap">Update</button>
@@ -87,8 +88,8 @@ export function renderHost(root: HTMLElement) {
     </section>
 
     <section class="panel">
-      <h2>Connection Status (<span id="remotes-count">0</span> connected)</h2>
-      <div id="remotes-list" class="stack" style="font-size:13px;color:var(--muted)">Waiting for your partner to connect...</div>
+      <h2>💞 Partner Connection (<span id="remotes-count">0</span> online)</h2>
+      <div id="remotes-list" class="stack" style="font-size:13px;color:var(--muted)">Waiting for your partner to join... 🧸</div>
     </section>
   `;
 
@@ -112,6 +113,7 @@ export function renderHost(root: HTMLElement) {
     paint();
     activateBanner.style.display = "none";
   };
+
 
   activateBanner.addEventListener("click", requestAwakeAndHaptics);
   window.addEventListener("pointerdown", () => {
@@ -313,12 +315,7 @@ export function renderHost(root: HTMLElement) {
     peer = new Peer(peerIdFor(cleanId), {
       debug: 0,
       config: {
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-          { urls: "stun:stun2.l.google.com:19302" },
-          { urls: "stun:stun.cloudflare.com:3478" },
-        ],
+        iceServers: DEFAULT_ICE_SERVERS,
       },
     });
 

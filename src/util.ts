@@ -67,6 +67,16 @@ export function randomCode(len = 6): string {
   return [...bytes].map((b) => alphabet[b % alphabet.length]).join("");
 }
 
+export const DEFAULT_ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun3.l.google.com:19302" },
+  { urls: "stun:stun4.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+  { urls: "stun:openrelay.metered.ca:80" },
+];
+
 export function sanitizeSessionId(raw: string): string {
   return raw
     .trim()
@@ -76,8 +86,8 @@ export function sanitizeSessionId(raw: string): string {
 }
 
 export function peerIdFor(code: string): string {
-  const clean = sanitizeSessionId(code) || "default";
-  return `ps5vibe-${clean.toUpperCase()}`;
+  const clean = sanitizeSessionId(code) || "room1";
+  return `pv2-${clean}`;
 }
 
 export function hashToken(str: string): string {

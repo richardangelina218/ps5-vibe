@@ -98,36 +98,68 @@ export function emptyPad(): PadSnapshot {
   };
 }
 
+export function getActiveGamepad(): Gamepad | null {
+  try {
+    const raw = navigator.getGamepads ? navigator.getGamepads() : [];
+    if (!raw) return null;
+    const pads = Array.from(raw).filter((p): p is Gamepad => Boolean(p && p.connected));
+    if (!pads.length) return null;
+
+    // Prioritize gamepad that has vibrationActuator or pressed buttons
+    const withVib = pads.find(
+      (p) =>
+        Boolean(p.vibrationActuator) ||
+        Boolean((p as unknown as Record<string, unknown>).hapticActuators)
+    );
+    if (withVib) return withVib;
+
+    const withPressed = pads.find((p) => p.buttons && p.buttons.some((b) => b.pressed || b.value > 0.1));
+    if (withPressed) return withPressed;
+
+    return pads[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function readPad(): PadSnapshot {
-  const pads = navigator.getGamepads?.() ?? [];
-  const pad = [...pads].find((p) => p && p.connected);
+  const pad = getActiveGamepad();
   if (!pad) return emptyPad();
 
   const info = detectController(pad.id);
   const buttonMap = info.type === "xbox" ? XBOX_BUTTON_NAMES : PS_BUTTON_NAMES;
 
   const pressed: string[] = [];
-  pad.buttons.forEach((b, i) => {
-    if (b.pressed) pressed.push(buttonMap[i] ?? `#${i}`);
-  });
+  if (pad.buttons) {
+    pad.buttons.forEach((b, i) => {
+      if (b && (b.pressed || b.value > 0.15)) {
+        pressed.push(buttonMap[i] ?? `#${i}`);
+      }
+    });
+  }
 
-  const actuator = pad.vibrationActuator as
+  // Look for any vibration actuator available
+  const pAny = pad as unknown as Record<string, unknown>;
+  const actuator = (pad.vibrationActuator ||
+    (Array.isArray(pAny.hapticActuators) ? pAny.hapticActuators[0] : null)) as
     | (GamepadHapticActuator & { type?: string })
     | null
     | undefined;
 
+  const hasVib = Boolean(actuator || ("vibrate" in navigator));
+
   return {
     connected: true,
     index: pad.index,
-    id: pad.id || "Connected Gamepad",
+    id: pad.id || "Controller",
     controllerType: info.type,
     modelLabel: info.label,
     mapping: pad.mapping || "standard",
-    buttons: pad.buttons.length,
-    axes: pad.axes.length,
+    buttons: pad.buttons ? pad.buttons.length : 0,
+    axes: pad.axes ? pad.axes.length : 0,
     pressed,
-    hasVibration: Boolean(actuator),
-    hapticType: actuator?.type ?? (actuator ? "dual-rumble" : "none"),
+    hasVibration: hasVib,
+    hapticType: actuator?.type ?? (actuator ? "dual-rumble" : "haptic"),
   };
 }
 
@@ -140,58 +172,109 @@ export async function playRumble(
   weak: number,
   strong: number,
 ): Promise<string> {
-  const pads = navigator.getGamepads?.() ?? [];
-  const pad = [...pads].find((p) => p && p.connected);
-  if (!pad) throw new Error("No controller connected");
-  const actuator = pad.vibrationActuator;
-  if (!actuator) {
-    throw new Error(
-      "This browser/controller has no vibration actuator. Android Chrome + DualSense usually does after you press a button.",
-    );
-  }
-
-  const ms = Math.max(1, Math.min(5000, Math.round(duration)));
+  const ms = Math.max(20, Math.min(5000, Math.round(duration)));
   const weakMagnitude = clamp01(weak);
   const strongMagnitude = clamp01(strong);
 
-  if (typeof actuator.playEffect === "function") {
-    await actuator.playEffect("dual-rumble", {
-      startDelay: 0,
-      duration: ms,
-      weakMagnitude,
-      strongMagnitude,
-    });
-    return "dual-rumble";
+  // Always re-query all connected gamepads right before triggering
+  let pad = getActiveGamepad();
+
+  // If active didn't have actuator, scan all connected gamepads
+  const allRaw = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter((p): p is Gamepad => Boolean(p && p.connected)) : [];
+  
+  for (const candidate of [pad, ...allRaw]) {
+    if (!candidate) continue;
+    const pAny = candidate as unknown as Record<string, unknown>;
+    const actuator = (candidate.vibrationActuator ||
+      (Array.isArray(pAny.hapticActuators) ? pAny.hapticActuators[0] : null)) as
+      | (GamepadHapticActuator & {
+          playEffect?: (type: string, params: unknown) => Promise<unknown>;
+          pulse?: (val: number, dur: number) => Promise<boolean>;
+        })
+      | null
+      | undefined;
+
+    if (actuator) {
+      // 1. Standard Gamepad dual-rumble
+      if (typeof actuator.playEffect === "function") {
+        try {
+          await actuator.playEffect("dual-rumble", {
+            startDelay: 0,
+            duration: ms,
+            weakMagnitude,
+            strongMagnitude,
+          });
+          return "dual-rumble";
+        } catch {
+          // fallback to pulse or next actuator
+        }
+      }
+
+      // 2. Pulse method fallback
+      if (typeof actuator.pulse === "function") {
+        try {
+          await actuator.pulse(Math.max(weakMagnitude, strongMagnitude), ms);
+          return "pulse";
+        } catch {
+          // fallback
+        }
+      }
+    }
   }
 
-  const extra = actuator as GamepadHapticActuator & {
-    pulse?: (value: number, duration: number) => Promise<boolean>;
-  };
-  if (typeof extra.pulse === "function") {
-    await extra.pulse(Math.max(weakMagnitude, strongMagnitude), ms);
-    return "pulse";
+  // 3. Fallback to phone hardware vibration if controller actuator is pending permission
+  if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(ms);
+      return pad ? "controller (phone fallback)" : "phone vibration";
+    } catch {
+      // ignore
+    }
   }
 
-  throw new Error("Vibration API present but no playEffect/pulse method");
+  if (!pad && allRaw.length === 0) {
+    throw new Error("No controller detected. Please tap any button on your controller.");
+  }
+  throw new Error("Controller connected but vibration is blocked or unsupported by browser.");
 }
 
 export async function stopRumble(): Promise<void> {
-  const pads = navigator.getGamepads?.() ?? [];
-  const pad = [...pads].find((p) => p && p.connected);
-  const actuator = pad?.vibrationActuator;
-  if (!actuator) return;
-  const reset = (actuator as GamepadHapticActuator & { reset?: () => Promise<undefined> })
-    .reset;
-  if (typeof reset === "function") {
-    await reset.call(actuator);
-    return;
+  const pad = getActiveGamepad();
+  if (pad) {
+    const pAny = pad as unknown as Record<string, unknown>;
+    const actuator = (pad.vibrationActuator ||
+      (Array.isArray(pAny.hapticActuators) ? pAny.hapticActuators[0] : null)) as
+      | (GamepadHapticActuator & {
+          reset?: () => Promise<unknown>;
+          playEffect?: (type: string, params: unknown) => Promise<unknown>;
+        })
+      | null
+      | undefined;
+
+    if (actuator) {
+      if (typeof actuator.reset === "function") {
+        try {
+          await actuator.reset();
+          return;
+        } catch {}
+      }
+      if (typeof actuator.playEffect === "function") {
+        try {
+          await actuator.playEffect("dual-rumble", {
+            startDelay: 0,
+            duration: 1,
+            weakMagnitude: 0,
+            strongMagnitude: 0,
+          });
+          return;
+        } catch {}
+      }
+    }
   }
-  if (typeof actuator.playEffect === "function") {
-    await actuator.playEffect("dual-rumble", {
-      startDelay: 0,
-      duration: 1,
-      weakMagnitude: 0,
-      strongMagnitude: 0,
-    });
+
+  if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(0);
+    } catch {}
   }
 }

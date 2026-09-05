@@ -1,6 +1,6 @@
 import Peer, { DataConnection } from "peerjs";
 import { parseMsg, type WireMsg } from "./protocol";
-import { peerIdFor, sanitizeSessionId } from "./util";
+import { DEFAULT_ICE_SERVERS, peerIdFor, sanitizeSessionId } from "./util";
 
 export function renderRemote(root: HTMLElement, initialCode = "") {
   let conn: DataConnection | null = null;
@@ -24,30 +24,30 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
   let pingMs: number | null = null;
   let pingInterval: number | null = null;
 
-  root.innerHTML = `
+    root.innerHTML = `
     <div class="top">
       <div>
-        <div class="brand">intimate sanctuary</div>
-        <h1>The Touch Controller</h1>
-        <p class="sub">Guide the sensations and rhythm on your partner's controller.</p>
+        <div class="brand">🪄 sweet vibrations · touch wand 💖</div>
+        <h1>✨ The Touch Controller 🎮</h1>
+        <p class="sub">Direct playful tickles, heartbeat pulses, and warm waves on your partner's controller!</p>
       </div>
-      <button class="ghost" id="home">Leave</button>
+      <button class="ghost" id="home">🐾 Leave</button>
     </div>
 
     <!-- Session & Login Panel -->
-    <section class="panel" style="border-color:var(--accent);background:rgba(217, 75, 118, 0.08)">
-      <h2>Private Connection</h2>
+    <section class="panel panel-highlight">
+      <h2>💌 Secret Connection</h2>
       <div class="stack">
         <div class="grid">
-          <label class="field">Partner's Room Code / Name
+          <label class="field">🌸 Partner's Room Code / Name
             <input id="session-code" type="text" maxlength="24" value="${currentSession}" placeholder="e.g. room1" style="text-transform:none;letter-spacing:0.05em" />
           </label>
-          <label class="field">Private Passcode
+          <label class="field">🔑 Private Passcode
             <input id="admin-pass" type="password" maxlength="32" value="${adminPass}" placeholder="Passcode" style="letter-spacing:0.05em" />
           </label>
         </div>
         <div style="display:flex;gap:8px">
-          <button id="join" style="flex:1">Connect To Partner</button>
+          <button id="join" style="flex:1">💖 Connect To Partner!</button>
           <button class="secondary" id="disconnect-btn" disabled>Disconnect</button>
         </div>
         <div class="row" style="align-items:center;justify-content:space-between;margin-top:4px">
@@ -59,47 +59,55 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
 
     <!-- Host Health & Telemetry -->
     <section class="panel">
-      <h2>Host Telemetry & Status</h2>
+      <h2>🧸 Partner's Controller Telemetry</h2>
       <div class="row" id="pills"></div>
       <div class="grid" style="margin-top:12px" id="stats"></div>
     </section>
 
-    <!-- Master Multiplier -->
+    <!-- Master Multiplier with Mastermind presets -->
     <section class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2>Master Intensity Multiplier</h2>
-        <strong id="multiplier-v" style="color:var(--accent-2);font-size:16px">1.0x (100%)</strong>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h2>🔥 Master Intensity Multiplier</h2>
+        <strong id="multiplier-v" style="color:var(--accent-2);font-size:17px">1.0x (100%)</strong>
       </div>
-      <label class="field">
-        <input id="master-multiplier" type="range" min="10" max="200" step="5" value="100" />
+      <label class="field" style="margin-top:6px">
+        <input id="master-multiplier" type="range" min="10" max="4000" step="10" value="100" />
       </label>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;color:var(--muted);font-weight:700">Multipliers:</span>
+        <button class="pill multiplier-chip" data-multi="1.0" style="cursor:pointer">1.0x Normal</button>
+        <button class="pill multiplier-chip" data-multi="2.5" style="cursor:pointer">⚡ 2.5x Mastermind</button>
+        <button class="pill multiplier-chip" data-multi="10.0" style="cursor:pointer">🔥 10x Mastermind</button>
+        <button class="pill multiplier-chip" data-multi="40.0" style="cursor:pointer">💥 40x Mastermind Max</button>
+      </div>
     </section>
 
     <!-- Admin Controls Navigation Tabs -->
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="touch">2D Touch Pad</button>
-      <button class="tab-btn" data-tab="manual">Precision Sliders</button>
-      <button class="tab-btn" data-tab="patterns">Dynamic Patterns</button>
-      <button class="tab-btn" data-tab="message">💬 Send Popup</button>
-      <button class="tab-btn" data-tab="sequencer">Custom Sequencer</button>
+      <button class="tab-btn active" data-tab="touch">✨ 2D Touch Pad</button>
+      <button class="tab-btn" data-tab="manual">🎚️ Dual Motors</button>
+      <button class="tab-btn" data-tab="patterns">🌊 Waves & Patterns</button>
+      <button class="tab-btn" data-tab="message">💌 Pop-up Note</button>
+      <button class="tab-btn" data-tab="sequencer">🎶 Sequencer</button>
     </div>
 
     <!-- TAB 1: 2D Touch Surface -->
     <section class="panel tab-content" id="tab-touch">
-      <h2>Real-time XY Haptic Surface</h2>
-      <p class="hint">Touch / drag anywhere on the pad. Drag horizontally for Weak (High Freq) and vertically for Strong (Low Freq). Release to stop.</p>
+      <h2>✨ Real-time Magic XY Touch Pad</h2>
+      <p class="hint">Drag your finger across the cozy pad! Drag sideways for crisp Weak motor tickles, and up/down for deep Strong motor rumble. Release to stop.</p>
       <div class="xy-pad-container" id="xy-pad">
         <div class="xy-reticle" id="xy-reticle"></div>
-        <span class="xy-pad-label xy-top">Max Strong (Low Freq)</span>
+        <span class="xy-pad-label xy-top">⚡ Max Bass (Strong)</span>
         <span class="xy-pad-label xy-bottom">Zero Strong</span>
         <span class="xy-pad-label xy-left">Min Weak</span>
-        <span class="xy-pad-label xy-right">Max Weak (High Freq)</span>
-        <div id="xy-coords" style="color:var(--muted);font-size:13px;pointer-events:none">Touch or Drag Here</div>
+        <span class="xy-pad-label xy-right">High Freq (Weak) ⚡</span>
+        <div id="xy-coords" style="color:var(--muted);font-size:14px;font-weight:700;pointer-events:none">🌸 Touch or Drag Here 🌸</div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <button class="secondary" id="continuous-toggle" style="flex:1" disabled>Hold-to-Vibrate: ON</button>
+      <div class="row" style="margin-top:12px">
+        <button class="secondary" id="continuous-toggle" style="flex:1" disabled>Hold-to-Vibrate: ON ✨</button>
       </div>
     </section>
+
 
     <!-- TAB 2: Precision Manual Sliders -->
     <section class="panel tab-content" id="tab-manual" style="display:none">
@@ -520,12 +528,7 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
     peer = new Peer({
       debug: 0,
       config: {
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-          { urls: "stun:stun2.l.google.com:19302" },
-          { urls: "stun:stun.cloudflare.com:3478" },
-        ],
+        iceServers: DEFAULT_ICE_SERVERS,
       },
     });
 
@@ -664,6 +667,17 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
     masterMultiplier = val / 100;
     multiplierLabel.textContent = `${masterMultiplier.toFixed(1)}x (${val}%)`;
     paintMotors();
+  });
+
+  // Mastermind Multiplier Preset Chips (2.5x, 10x, 40x, 1x)
+  root.querySelectorAll<HTMLButtonElement>(".multiplier-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const multi = Number(chip.dataset.multi ?? 1.0);
+      masterMultiplier = multi;
+      multiplierInput.value = String(Math.round(multi * 100));
+      multiplierLabel.textContent = `${multi.toFixed(1)}x (${Math.round(multi * 100)}%)`;
+      paintMotors();
+    });
   });
 
   root.querySelector("#home")!.addEventListener("click", () => {
