@@ -5,28 +5,19 @@ const app = document.querySelector("#app")!;
 
 function renderHome() {
   app.innerHTML = `
-    <div class="top">
+    <div class="top" style="justify-content:center;text-align:center">
       <div>
-        <div class="brand">✨ spark · vibe · giggle 💖</div>
-        <h1>Vibey Touch Room 🎮✨</h1>
-        <p class="sub">Your cozy, playful hideaway to share buzzes, sweet tingles & secret notes!</p>
+        <h1 style="font-size:28px">🎮 Pick Your Side ✨</h1>
       </div>
     </div>
-    <section class="panel">
-      <h2>🍓 How The Magic Works</h2>
-      <p class="hint" style="line-height:1.7">
-        One of you pairs a PS5 DualSense (or any controller) over Bluetooth and relaxes with this screen open. The other takes the magical remote controls to send tickles, waves, custom buzzes, and pop-up love notes! 💕
-      </p>
-    </section>
     <section class="panel choice">
-      <h2>🎀 Pick Your Side</h2>
       <button id="host" class="role-btn-host">
-        🧸 Holding The Controller (Receiver)
-        <small>Pair your controller, get comfy, and let your partner buzz you with love! 🌸</small>
+        🎮 Controller Side
+        <small>Connect your controller to receive vibrations</small>
       </button>
       <button class="secondary role-btn-remote" id="remote">
-        🪄 The Touch Wizard (Remote Controller)
-        <small>Grab the steering wheel! Send custom rhythms, 2D pad tickles & messages ✨</small>
+        ✨ Remote Side
+        <small>Control sensations, patterns & send messages</small>
       </button>
     </section>
   `;

@@ -22,11 +22,10 @@ export function renderHost(root: HTMLElement) {
     <div id="toast-container" class="toast-container"></div>
     <div class="top">
       <div>
-        <div class="brand">🌸 cozy vibes · snug sanctuary 🍓</div>
-        <h1 id="host-title">🧸 The Receiver Nest</h1>
-        <p class="sub">Keep this tab cozy and your controller powered on. Your partner will tickle and vibrate it from afar! ✨</p>
+        <h1 id="host-title">🎮 Controller Side ✨</h1>
+        <p class="sub">Keep this page open and your controller connected.</p>
       </div>
-      <button class="ghost" id="home">🐾 Leave</button>
+      <button class="ghost" id="home">Back</button>
     </div>
 
     <!-- Friendly Tap To Activate Banner (Required by Android & iOS) -->

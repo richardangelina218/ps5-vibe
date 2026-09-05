@@ -27,11 +27,10 @@ export function renderRemote(root: HTMLElement, initialCode = "") {
     root.innerHTML = `
     <div class="top">
       <div>
-        <div class="brand">🪄 sweet vibrations · touch wand 💖</div>
-        <h1>✨ The Touch Controller 🎮</h1>
-        <p class="sub">Direct playful tickles, heartbeat pulses, and warm waves on your partner's controller!</p>
+        <h1>✨ Remote Side 🎮</h1>
+        <p class="sub">Send vibrations, custom rhythms, and messages to your partner.</p>
       </div>
-      <button class="ghost" id="home">🐾 Leave</button>
+      <button class="ghost" id="home">Back</button>
     </div>
 
     <!-- Session & Login Panel -->
