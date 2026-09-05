@@ -1,22 +1,26 @@
 # ps5-vibe
 
-Control DualSense (PS5) rumble from a web page. The **phone** stays connected to the controller over Bluetooth. A **second device** sends vibration commands through a peer-to-peer room code. No paid backend — static files on GitHub Pages, Vercel, or similar.
+Control DualSense (PS5) rumble remotely with full admin controls. The **phone** stays connected to the controller over Bluetooth as a secure bridge. The **Admin** connects from any phone or desktop via a WebRTC session code with passcode protection. Zero paid backend — static files deployed for free on GitHub Pages, Vercel, or Netlify.
 
 ## How it works
 
 1. Pair the DualSense in **Android Bluetooth settings** (hold the PS + Create buttons until the light bar flashes).
 2. Open this site in **Android Chrome** (HTTPS required).
-3. Choose **Host**, then press a button on the controller so Chrome notices the gamepad.
-4. Copy the remote link / room code to a laptop or another phone and send rumble from there.
+3. Tap **Host Bridge**, set a session ID and an **Admin Passcode**, then press any button on the controller.
+4. Open the **Admin Panel** on your other device (or via the direct link), enter your passcode, and control all vibration parameters.
 
-The host tab must stay open. That phone is the Bluetooth bridge.
+The host tab must stay open (Screen Wake Lock keeps the display and Bluetooth active).
 
-## Limits (worth knowing)
+## Features
 
-- **Android Chrome** is the target. iOS Safari cannot talk to DualSense from a website.
-- Rumble uses the [Gamepad Haptics](https://w3c.github.io/gamepad/#dom-gamepad-vibrationactuator) `dual-rumble` effect. That is the two classic motors, not DualSense’s full haptic/adaptive-trigger hardware (that needs WebHID, which Android Chrome does not expose).
-- Remote signaling uses [PeerJS](https://peerjs.com/) (public broker + WebRTC). Fine for personal use; the free broker can be flaky. You can point `Peer` at your own PeerServer later if you want.
-- Battery level is not available through the Gamepad API.
+- **Admin Login & Passcode Protection**: Only the person with the passcode can trigger vibrations. Guests are locked or read-only.
+- **Customizable Session IDs**: Pick persistent room names (e.g. `room-101`) or generate random ones.
+- **Live 2D XY Touch Surface**: Drag your thumb across the screen to dynamically blend weak (high-pitch) and strong (low-bass) rumble in real time on mobile.
+- **Master Intensity Multiplier**: Scale total vibration power from 0.1x to 2.0x on the fly.
+- **Dynamic Waveforms & Loops**: Preset loops for Heartbeat, Crescendo ramp, Sine wave, Butterfly flutter, Earthquake, and Machine Staccato.
+- **Custom Step Sequencer**: Program custom pulse rhythms (`weak,strong,duration | ...`).
+- **Emergency Panic Stop**: Always-accessible floating stop button.
+- **Live Latency & Button Telemetry**: Live ping in milliseconds and real-time buttons held indicator.
 
 ## Dev
 

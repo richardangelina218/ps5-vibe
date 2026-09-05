@@ -289,3 +289,133 @@ input[type="text"] {
   color: var(--muted);
   white-space: pre-wrap;
 }
+
+/* XY Touch Surface */
+.xy-pad-container {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: radial-gradient(circle at center, #1b2438 0%, #0c1017 100%);
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  touch-action: none;
+  overflow: hidden;
+  user-select: none;
+  cursor: crosshair;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xy-pad-container.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 30px rgba(77, 141, 255, 0.25);
+}
+
+.xy-reticle {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #7af0c8 0%, var(--accent) 70%, transparent 100%);
+  border: 2px solid #ffffff;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 16px var(--accent-2);
+  display: none;
+}
+
+.xy-pad-label {
+  position: absolute;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.xy-top { top: 8px; }
+.xy-bottom { bottom: 8px; }
+.xy-left { left: 10px; }
+.xy-right { right: 10px; }
+
+/* Tab buttons */
+.tab-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--bg-2);
+  color: var(--accent-2);
+  border: 1px solid var(--line);
+  font-weight: bold;
+}
+
+/* Floating Stop button for mobile */
+.floating-stop {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(255, 93, 122, 0.5);
+  font-size: 16px;
+  padding: 16px 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pattern cards */
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.pattern-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.pattern-card:hover {
+  border-color: var(--accent);
+}
+
+.pattern-card.running {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 12px rgba(122, 240, 200, 0.3);
+}
+
+.pattern-card strong {
+  font-size: 14px;
+}
+
+.pattern-card span {
+  font-size: 11px;
+  color: var(--muted);
+}

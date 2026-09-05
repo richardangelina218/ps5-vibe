@@ -27,14 +27,14 @@ function renderHome() {
       </p>
     </section>
     <section class="panel choice">
-      <h2>Choose a role</h2>
+      <h2>Choose Mode</h2>
       <button id="host">
-        Host on this phone
-        <small>Connect the DualSense here. Keep this tab open.</small>
+        🎮 Connect PS5 Controller (The Receiver)
+        <small>Open this on the phone paired to the DualSense over Bluetooth.</small>
       </button>
       <button class="secondary" id="remote">
-        Remote control
-        <small>Laptop or another phone. Enter the host’s room code.</small>
+        🎛️ Admin Remote Control (You)
+        <small>Log in with your passcode to trigger vibrations, patterns & XY touch controls.</small>
       </button>
     </section>
   `;
